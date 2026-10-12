@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>flightlogs-sortielog</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bootstrap" Version="5.3.3" />
+    <PackageReference Include="Font.Awesome" Version="5.15.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="8.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OAuth" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Data.Analysis" Version="0.22.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Microsoft.ML" Version="4.0.2" />
+    <PackageReference Include="Microsoft.ML.AutoML" Version="0.22.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="popper.js" Version="1.16.1" />
+    <PackageReference Include="TempusDominus" Version="6.10.1" />
+  </ItemGroup>
+
+</Project>

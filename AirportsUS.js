@@ -1,0 +1,1 @@
+﻿[{ "Station": "72645014898", "Latitude": 44.4795800, "Longitude": -88.1371000, "Elevation": 208, "Locality": "GREEN BAY A S INTERNATIONAL AIRPORT, WI US", "CallSign": "KGRB" }]

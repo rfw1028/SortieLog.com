@@ -1,0 +1,44 @@
+{
+    "type": "object",
+    "properties": {
+        "Airport": {
+            "type": "string"
+        },
+        "Year": {
+            "type": "integer"
+        },
+        "Month": {
+            "type": "integer"
+        },
+        "Day": {
+            "type": "integer"
+        },
+        "LocalTime": {
+            "type": "integer"
+        },
+        "VEC": {
+            "type": "string"
+        },
+        "Day-Night": {
+            "type": "string"
+        },
+        "WindDir": {
+            "type": "string"
+        },
+        "WindSpd": {
+            "type": "string"
+        },
+        "PrecipAmtPerMinute": {
+            "type": "string"
+        },
+        "Baro1": {
+            "type": "string"
+        },
+        "Temp": {
+            "type": "string"
+        },
+        "Dewpoint": {
+            "type": "string"
+        }
+    }
+}

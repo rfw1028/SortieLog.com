@@ -1,0 +1,12 @@
+﻿@page
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var session = HttpContextAccessor.HttpContext?.Session;
+    var name = session?.GetString("FirstName");
+}
+@model FlightLogs.Pages.DashboardModel
+@{
+}
+<h2>Welcome, @name</h2>

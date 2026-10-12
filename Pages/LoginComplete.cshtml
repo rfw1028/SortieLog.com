@@ -1,0 +1,8 @@
+﻿@page
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h2>Login Complete</h2>
+
+<p>User: @HttpContextAccessor.HttpContext?.User?.Identity?.Name</p>
+<p>Email: @HttpContextAccessor.HttpContext?.User?.Claims.FirstOrDefault(c => c.Type == "email")?.Value</p>

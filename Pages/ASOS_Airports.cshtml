@@ -1,0 +1,405 @@
+﻿@page
+@model FlightLogs.Pages.ASOS_AirportsModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@using System.Text.Json
+@using System.Security.Claims
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="RequestVerificationToken" content="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+    <style>
+        .runway-marker {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            transform: translate(0%, 0%);
+        }
+
+        .runway {
+            position: absolute;
+            background-color: #333;
+            border-radius: 2px;
+        }
+
+            .runway.horizontal {
+                width: 40px;
+                height: 6px;
+                top: 50%;
+                left: 0;
+                transform: translateY(-50%);
+            }
+
+            .runway.vertical {
+                height: 40px;
+                width: 6px;
+                left: 50%;
+                top: 0;
+                transform: translateX(-50%);
+            }
+
+            .runway.diagonal1 {                
+                width: 40px;
+                height: 6px;
+                top: 50%;
+                left: 0;               
+                transform-origin: center;
+            }
+
+            .runway.diagonal2 {
+                width: 40px;
+                height: 6px;
+                top: 50%;
+                left: 0;
+                transform: rotate(-45deg) translateY(-50%);
+                transform-origin: center;
+            }
+    
+        input {
+            text-align: center;
+        }
+
+        #controlpanel {
+            width: 200px;
+            position: absolute;
+            top: 110px;
+            left: 5px;
+            bottom: 65px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+       
+        #map {
+            position: absolute;
+            top: 110px;
+            bottom: 65px;
+            left: 210px;
+            right: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=@Config["GoogleMaps:ApiKey"]&loading=async&callback=initMap&libraries=marker&v=weekly"></script>
+    <script>
+        var lat = 0;
+        var lng = 0;
+
+        let connectionId = "";
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/progressHub")
+            .build();
+
+        connection.on("ReceiveProgress", function (percent, message) {
+                        document.getElementById("progressBar").value = percent;
+			            document.getElementById("progressText").innerText = message;
+         });
+
+        connection.start().then(function () {
+            console.log("SignalR connected");
+            connectionId = connection.connectionId;
+        });
+              
+
+        var token = document.querySelector('meta[name="RequestVerificationToken"]').getAttribute('content');
+        
+          var map = "";
+
+          window.addEventListener('load', pgResized);
+          window.addEventListener('resize', pgResized);
+          
+          let boundsObj = {};
+
+                 
+            function pgResized() {
+                   
+            }
+
+        function getAirports(boundsObj) {
+            try {                
+
+                fetch('ASOS_Airports?handler=Bounds', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(boundsObj)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(errText => {
+                            throw new Error("Server error: " + errText);
+                        });
+                    }
+                    return response.json(); // ✅ return the parsed JSON here
+                })
+                .then(data => {
+                   // document.getElementById("responseMessage").value += "Success\r\n";
+                    addMarkers(JSON.stringify(data)); // or use data directly if it's already an object
+                })
+                .catch(error => {
+                    document.getElementById("responseMessage").value += "Error: " + error.message + "\r\n";
+                });
+
+            } catch (ex) {
+                alert(ex.message);
+            }
+        }
+
+                let markers = [];
+                let infoWindows = [];
+
+                function clearMarkers() {
+                             // Loop through the markers array and set each marker's map to null
+                            for (var i = 0; i < markers.length; i++) {
+                                 markers[i].setMap(null);
+                                 infoWindows[i].close(); // Close the info window
+                             }
+                            
+                             infoWindows = []; // Clear the infoWindows array
+                             markers = []; // Clear the markers array
+                }
+
+
+
+
+                function addMarkers(jsonString){
+                    try{
+
+                    if(markers.length>0){clearMarkers()};
+
+                      //document.getElementById("responseMessage").value = jsonString;
+                     // var freqs = "";
+
+                    const stations = JSON.parse(jsonString);                       
+                    
+                       stations.forEach(station => {                       
+
+                                const markerEl = document.createElement("div");
+                                markerEl.className = "runway-marker";
+                                
+                                const runways = station.runways;                                                            
+                                var rwyText = "";
+                                rwyText += "There are " + runways.length + " runways.";
+                                runways.forEach(runway =>{
+                                        const runway1 = document.createElement("div");
+                                        runway1.className = "runway diagonal1";     
+                                        runway1.id = station.faaId + "-" + runway.id;
+                                          if (runway.surface === "G") {
+                                                 runway1.style.backgroundColor = "tan";
+                                          } else if (runway.surface === "C") {
+                                             runway1.style.backgroundColor = "gray";                                          
+                                          }else if(runway.surface==="T"){
+                                               runway1.style.backgroundColor = "lime";
+                                          }else if(runway.surface==="A"){
+                                               runway1.style.backgroundColor = "black";
+                                          }
+                                         rwyText += "<br />Runway " + runway.id + " is " + runway.dimension + " feet."
+                                          var rdim = runway.dimension.split('x');
+                                          var len = parseInt(rdim[0]);
+                                          var wd = parseInt(rdim[1]);
+                                          len = (len/200).toFixed(0);
+                                          wd = (wd/20).toFixed(0);
+
+                                          if(wd>15){
+                                              wd=15;
+                                          };
+
+                                          if(len>60){
+                                             len=60;
+                                          };
+                                         
+                                          runway1.style.width = len + "px";
+                                          runway1.style.height = wd + "px";
+                                          
+                                          if(station.type==="HEL"){
+                                              runway1.style.width="25px";
+                                              runway1.style.color="black";
+                                              runway1.style.border="1px solid black";
+                                              runway1.style.backgroundColor = "yellow";
+                                              runway1.style.height="25px";
+                                              runway1.style.textAlign = "center";
+                                              runway1.style.verticalAlign = "middle";                                              
+                                              runway1.innerHTML = "<p style='font-family:Montserrat;font-weight:900;font-size:11px;'>H</p>";
+                                                runway1.style.paddingTop = "5px";
+                                          }
+                                          runway1.style.paddingTop = "3px"; 
+                                          //runway1.style.outline = "1px solid black";
+                                        
+                                        var ra = parseInt(runway.alignment);
+                                        ra = ra - 90;
+                                        runway1.style.transform = "rotate(" + ra + "deg) translate(10%, 10%)";        
+                                       markerEl.appendChild(runway1);               
+                                });
+                                      
+                                    let marker = new google.maps.marker.AdvancedMarkerElement({
+                                    position: { lat: parseFloat(station.lat), lng: parseFloat(station.lon) },
+                                    map: map,
+                                    content: markerEl,
+                                    title: station.iataId,
+                                    collisionBehavior: "OPTIONAL_AND_HIDES_LOWER_PRIORITY",
+                                    });
+
+                                     lng = marker.position.lng;
+                                     lat = marker.position.lat;
+
+
+                                    markers.push(marker);         
+                                    
+                                    var stn = station.name.split('/');
+                                    var apName = "";
+                                    var locality = stn[0];
+
+                                    if(stn.length>1){
+                                        for(var i = 1;i<stn.length;i++){
+                                            apName += stn[i] + "-";
+                                        }
+                                    }
+                                    var fText = "";
+                                    if(station.freqs.toString().length>0){
+                                       fText = "<b>Frequencies: </b>" + station.freqs; 
+                                    }else{
+                                       fText = "";
+                                    }
+
+                                    var info = "<div style='background-color:gray;color:white;padding: 4px 4px 4px 4px'>" + apName  + "<br />";   
+                                    info += "<b>FAA ID:</b> " + station.faaId + "   &nbsp;&nbsp;<b>Elevation:</b> " + ((parseInt(station.elev) * 39) / 12).toFixed(0) + " ft.&nbsp;&nbsp;&nbsp;";
+                                    info += "<b>Locality:</b> " + locality + "  <b>State: </b>" + station.state  + "&nbsp;<br />" + fText +  "<br />";
+                                    info += rwyText + "</div>";
+                                    info += "<br /><div style='width:100%;text-align:center;'>";
+                                    info += "<button onclick=handleAirportClick()>Get Historical Weather</button></div>";                                   
+ 
+                                    let infoWindow = new google.maps.InfoWindow({
+                                        content: info
+                                    });
+                                    infoWindows.push(infoWindow);
+
+                                    google.maps.event.addListener(marker, 'click', function () {
+                                             infoWindow.open(map, this);
+                                    });
+                         });
+                     }catch(err){ 
+                             alert(err.message);
+                      }
+                }
+
+                function handleAirportClick(){
+                  // alert(lat + ',' + lng);
+                    var dte;
+                    if(document.getElementById('datetimepicker').value==null){
+                       dte = new Date.now();
+                    }else{ dte = document.getElementById('datetimepicker').value};
+
+                           fetch('ASOS_Airports?handler=Weather', {
+                                method: 'POST',
+                               headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': token
+                                },
+                                body: JSON.stringify({                                   
+                                    date: dte,
+                                    lat: lat,
+                                    lng: lng,
+                                    connectionId: connectionId
+                                })
+                           })
+                           .then(response => {
+                                         if (!response.ok) throw new Error("Server error");
+                                         return response.json(); // 👈 Must parse the JSON
+                          })
+
+                        .then(data => {
+                               
+                                 var msg = "For this area on this month & day: " + data.date + "\r\n";
+                                 msg += "Avg. Wind Dir:" + data.avgWindDir + "\r\n";
+                                 msg += "Avg. Wind Spd:" + data.avgWindSpd + "\r\n";
+                                 msg += "Avg. Temp:" + data.avgTemp + "\r\n";
+                                 msg += "Avg. Baro. Press:" + parseFloat(data.avgBaro).toFixed(2) + "\r\n";
+                                document.getElementById('responseMessage').value = msg;
+                        })
+
+                        .catch(error => {
+                        document.getElementById('responseMessage').value = 'Error: ' + error.message;
+                        });
+                }
+              
+
+                async function initMap() {
+
+                    var location = {lat: 44.488449095167645, lng: -88.13181425565789 }; // Default to KGRB
+
+                     map = new google.maps.Map(document.getElementById('map'), {
+                        zoom: 13,
+                        center: location,
+                          mapId: '942a3abf82be32c2'
+                     });
+
+                         map.addListener("idle", () => {
+
+                                const llb = map.getBounds();
+                                         if (llb) {
+                                                    boundsObj = {
+                                                    north: llb.getNorthEast().lat(),
+                                                    east: llb.getNorthEast().lng(),
+                                                    south: llb.getSouthWest().lat(),
+                                                    west: llb.getSouthWest().lng()
+                                                    };
+                                         }
+                                         clearMarkers();
+                                         getAirports(boundsObj);
+                         });
+
+
+                     flatpickr("#datetimepicker", {
+                           enableTime: true,
+                            time_24hr: true,
+                            dateFormat: "m-d-Y H:i",
+                            defaultDate:  new Date()
+                     });
+                                          
+                }
+
+        //     async function getAirportInfo(icao) {
+        //     try {               
+        //         const response = await fetch("ASOS_Airports?handler=ProxyAirport&icao=" +icao);             
+
+        //         const data  = await response.json();
+
+        //         const airport = data[0];
+
+        //         const runways = airport.runways;
+
+                       
+        //        document.getElementById('responseMessage').value += "\r\n" + airport.icaoId;
+                
+
+        //        document.getElementById('responseMessage').value += "\r\n" + JSON.stringify(airport, null, 2);
+              
+        //     } catch (err) {
+        //         document.getElementById('responseMessage').value = "Error: " + err.message;
+        //     }
+
+        // }
+                          
+    
+    </script>
+</head>
+<body>
+    <div id="controlpanel">
+    <input type="text" id="datetimepicker" name="datetimepicker" />     
+        <div>
+        <p id="progressText" style="width:80%;padding:2px;"></p>
+        <progress id="progressBar" style="background-color:dodgerblue;height:30px;padding:5px;" max="100" value="0"></progress>
+        </div>
+        <textarea id="responseMessage" rows="25" cols="20"></textarea>
+    </div>
+    <div id="map"></div> 
+</body>
+</html>

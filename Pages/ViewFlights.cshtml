@@ -1,0 +1,18 @@
+﻿@page
+@model FlightLogs.Pages.ViewFlightsModel
+@{
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@using System.Text.Json
+@using System.Security.Claims
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="RequestVerificationToken" content="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
+</head>
+<body>
+	<div>
+	<textarea id="flightData" cols="180" rows="15"></textarea>
+	</div>
+</body>
+</html>
